@@ -9,7 +9,7 @@ index = default_init()
 
 
 @app.route('/', methods=["POST"])
-def remove_background():
+def query():
     in_json = request.json
     text = in_json["text"]
     n = in_json.get("n", 1)
