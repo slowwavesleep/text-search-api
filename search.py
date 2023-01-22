@@ -1,5 +1,6 @@
 from pathlib import Path
 from dataclasses import dataclass
+from typing import List
 
 from transformers import CLIPTokenizerFast, CLIPProcessor, CLIPModel
 import torch
@@ -56,27 +57,55 @@ class ImageIndex:
             batch = self.processor(
                 text=None,
                 images=batch,
-                return_tensors='pt',
+                return_tensors="pt",
                 padding=True
-            )['pixel_values'].to(self.device)
+            )["pixel_values"].to(self.device)
             batch_emb = self.model.get_image_features(pixel_values=batch).squeeze(0).cpu().detach().numpy()
             processed.append(batch_emb)
         self.index = np.concatenate(processed, axis=0)
 
-    def query(self, text: str, n: int = 1):
+    def query(self, text: str, n: int = 1, *, agg_strategy: str = "max_similarity_product"):
+        if n < 1:
+            n = 1
         inputs = self.tokenizer(text, return_tensors="pt").to(self.device)
         text_emb = self.model.get_text_features(**inputs).cpu().detach()
         similarities = torch.nn.functional.cosine_similarity(text_emb, torch.tensor(self.index))
-        if n < 1:
-            n = 1
-        top = torch.argsort(similarities, descending=True)[:n]
-        return [
-            QueryOutput(
-                product_name=self.keys[i].parts[-2],
-                url=str(self.keys[i]),
-                score=float(similarities[i])
-            ) for i in top
-        ]
+        return max_similarity_per_product(self.keys, similarities, n)
+
+
+def max_similarity_per_image(image_paths: List[Path], similarities, n):
+    top = torch.argsort(similarities, descending=True)[:n]
+    return [
+        QueryOutput(
+            product_name=image_paths[i].parts[-2],
+            url=str(image_paths[i]),
+            score=float(similarities[i])
+        ) for i in top
+    ]
+
+
+def max_similarity_per_product(image_paths: List[Path], similarities, n):
+    seen = set()
+    output = []
+    top = torch.argsort(similarities, descending=True)
+    for i in top:
+        if len(output) >= n:
+            break
+        cur_product = image_paths[i].parts[-2]
+        if cur_product not in seen:
+            seen.add(cur_product)
+            output.append(
+                QueryOutput(
+                    product_name=cur_product,
+                    url=str(image_paths[i]),
+                    score=float(similarities[i])
+                )
+            )
+    return output
+
+
+def mean_similarity():
+    ...
 
 
 def default_init():
@@ -93,6 +122,4 @@ def default_init():
 
     return index
 
-# index = default_init()
-# print(index.query("green shirt with pockets", 3))
 

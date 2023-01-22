@@ -13,10 +13,10 @@ def query():
     in_json = request.json
     text = in_json["text"]
     n = in_json.get("n", 1)
+    # agg strategy ...
     output = index.query(text, n)
     out_json = jsonify([
         {key: value for key, value in asdict(el).items()}
         for el in output
     ])
     return out_json
-
