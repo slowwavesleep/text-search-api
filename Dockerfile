@@ -2,7 +2,7 @@
 # this service would be really impractical without gpu capabilities
 FROM anibali/pytorch:1.13.0-cuda11.8-ubuntu22.04
 
-WORKDIR /bgremover
+WORKDIR /textsearch
 
 COPY . .
 
