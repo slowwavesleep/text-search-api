@@ -10,7 +10,7 @@ COPY . .
 RUN pip install transformers
 
 # cache the weights inside the image
-python load_model.py
+RUN python load_model.py
 
 RUN pip install Flask
 
