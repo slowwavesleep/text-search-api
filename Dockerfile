@@ -7,8 +7,12 @@ WORKDIR /bgremover
 COPY . .
 
 # the rest is already installed in the base image
-RUN pip install Flask
 RUN pip install transformers
+
+# cache the weights inside the image
+python load_model.py
+
+RUN pip install Flask
 
 ENV FLASK_APP=api
 ENV FLASK_RUN_HOST=0.0.0.0
