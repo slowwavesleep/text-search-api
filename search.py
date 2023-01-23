@@ -9,8 +9,6 @@ from tqdm.auto import trange
 import numpy as np
 
 
-
-
 @dataclass
 class QueryOutput:
     product_name: str
